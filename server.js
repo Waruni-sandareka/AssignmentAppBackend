@@ -1,14 +1,12 @@
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
-const cors = require('cors');
 const bcrypt = require('bcrypt');
 
 const app = express();
 const db = new sqlite3.Database('./fot-news-db');
 
 app.use(bodyParser.json());
-app.use(cors());
 
 // Initialize database tables
 db.serialize(() => {
@@ -31,6 +29,7 @@ db.serialize(() => {
 // User Routes
 // Register (Create User)
 app.post('/register', async (req, res) => {
+    console.log("Register User.........")
     const { username, email, password } = req.body;
     if (!username || !email || !password) {
         return res.status(400).json({ error: 'All fields are required' });
@@ -53,6 +52,7 @@ app.post('/register', async (req, res) => {
 
 // Login (Read User)
 app.post('/login', (req, res) => {
+    console.log("Register Login.........")
     const { email, password } = req.body;
     if (!email || !password) {
         return res.status(400).json({ error: 'Email and password are required' });
@@ -103,33 +103,31 @@ app.get('/users/:id', (req, res) => {
 });
 
 // Update User
-app.put('/users/:id', async (req, res) => {
+app.put('/users/:id', (req, res) => {
+    console.log("Update User.........")
     const { id } = req.params;
-    const { username, email, password } = req.body;
-    if (!username || !email || !password) {
-        return res.status(400).json({ error: 'All fields are required' });
+    const { username, email } = req.body;
+
+    if (!username || !email) {
+        return res.status(400).json({ error: 'Username and email are required' });
     }
 
-    try {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        db.run(`UPDATE users SET username = ?, email = ?, password = ? WHERE id = ?`,
-            [username, email, hashedPassword, id],
-            function(err) {
-                if (err) {
-                    return res.status(400).json({ error: err.message });
-                }
-                if (this.changes === 0) {
-                    return res.status(404).json({ error: 'User not found' });
-                }
-                res.json({ message: 'User updated' });
-            });
-    } catch (err) {
-        res.status(500).json({ error: 'Server error' });
-    }
+    db.run(`UPDATE users SET username = ?, email = ? WHERE id = ?`,
+        [username, email, id],
+        function(err) {
+            if (err) {
+                return res.status(400).json({ error: err.message });
+            }
+            if (this.changes === 0) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            res.json({ message: 'User updated' });
+        });
 });
 
 // Delete User
 app.delete('/users/:id', (req, res) => {
+    console.log("Delete User.........")
     const { id } = req.params;
     db.run(`DELETE FROM users WHERE id = ?`, [id], function(err) {
         if (err) {
@@ -162,6 +160,7 @@ app.post('/news', (req, res) => {
 
 // Read All News
 app.get('/news', (req, res) => {
+    console.log("Read All News.........")
     db.all(`SELECT id, title, content FROM news`, [], (err, rows) => {
         if (err) {
             return res.status(400).json({ error: err.message });
@@ -207,6 +206,7 @@ app.put('/news/:id', (req, res) => {
 
 // Delete News
 app.delete('/news/:id', (req, res) => {
+    console.log("Delete News.........")
     const { id } = req.params;
     db.run(`DELETE FROM news WHERE id = ?`, [id], function(err) {
         if (err) {
